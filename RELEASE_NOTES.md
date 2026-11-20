@@ -1,4 +1,8 @@
-## Drift Station v0.3.0
+## Drift Station v0.3.1
+
+- **Uninstaller**: `DriftStation-Uninstaller.pkg` removes Drift Station with a double-click (VST3, Audio Unit, Standalone app). Your projects stay untouched.
+
+### v0.3.0
 
 - **Steady pitch in the delays**: Drift now moves every delay line only on its own side of the stereo field. Before, copies of the same tone could cross and briefly waver in pitch (up to about 40 cents in 4 Delays with high Drift). Now it stays below 1 cent, so drones are rock solid for playing over them.
 - **Stereo sway**: the memory output slowly drifts between left and right in the background, like the hardware. Your live input stays in the centre.

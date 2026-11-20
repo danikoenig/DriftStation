@@ -81,6 +81,18 @@ jobs:
             --package-path build/pkg "dist/DriftStation-Installer.pkg"
           pkgutil --payload-files "dist/DriftStation-Installer.pkg" | head -5
 
+      - name: Build uninstaller (.pkg)
+        run: |
+          VERSION=$(grep -m1 -oE 'project\(DriftStation VERSION [0-9.]+' CMakeLists.txt | grep -oE '[0-9.]+$')
+          mkdir -p build/unpkg dist
+          chmod +x installer/uninstall/scripts/postinstall
+          pkgbuild --nopayload --scripts installer/uninstall/scripts \
+            --identifier ch.danikoenig.driftstation.uninstall --version "$VERSION" build/unpkg/DriftStationUninstall.pkg
+          sed "s/@VERSION@/$VERSION/g" installer/uninstall/distribution.xml > build/unpkg/distribution.xml
+          productbuild --distribution build/unpkg/distribution.xml --resources installer/uninstall/resources \
+            --package-path build/unpkg "dist/DriftStation-Uninstaller.pkg"
+          ls -la dist
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
