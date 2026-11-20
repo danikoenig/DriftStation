@@ -197,6 +197,14 @@ void DriftStationProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
     engine.process (eL, eR, wl, wr, n);
 
+    // Ultra langsames Stereo-Schweben wie bei der Hardware: zwei Sinus mit 83 s und 131 s Periode.
+    // Nur eine Pegelverschiebung zwischen links und rechts (ca. +/-1.5 dB), aendert die Tonhoehe nicht.
+    swayPhaseA += (double) n / (83.0 * sr);  if (swayPhaseA >= 1.0) swayPhaseA -= 1.0;
+    swayPhaseB += (double) n / (131.0 * sr); if (swayPhaseB >= 1.0) swayPhaseB -= 1.0;
+    const double twoPi = juce::MathConstants<double>::twoPi;
+    const float bal = (float) (0.2 * std::sin (twoPi * swayPhaseA) + 0.12 * std::sin (twoPi * swayPhaseB));
+    const float swayL = std::sqrt (1.0f - bal), swayR = std::sqrt (1.0f + bal);
+
     float outPeak = 0.0f;
     for (int s = 0; s < n; ++s)
     {
@@ -205,6 +213,7 @@ void DriftStationProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         const float wetG = std::sin (mixSm * juce::MathConstants<float>::halfPi);
         float tl = wl[s], tr = wr[s];
         shifter.process (tl, tr);                    // Transpose nur auf dem Speicher-Ausgang
+        tl *= swayL; tr *= swayR;                    // Schweben nur auf dem Speicher, dein Live-Spiel bleibt in der Mitte
         float l = L[s] * dryG + tl * wetG, r = R[s] * dryG + tr * wetG;
         limiter.process (l, r, thr);
         L[s] = l; R[s] = r;
@@ -222,6 +231,7 @@ void DriftStationProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 void DriftStationProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
+    state.setProperty ("uiScale", uiScale.load(), nullptr);
     if (auto xml = state.createXml())
         copyXmlToBinary (*xml, destData);
 }
@@ -230,7 +240,10 @@ void DriftStationProcessor::setStateInformation (const void* data, int sizeInByt
 {
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
         if (xml->hasTagName (apvts.state.getType()))
+        {
+            uiScale.store ((float) xml->getDoubleAttribute ("uiScale", 1.0));
             apvts.replaceState (juce::ValueTree::fromXml (*xml));
+        }
     // Erase nie dauerhaft gedrueckt laden
     if (auto* e = apvts.getParameter (ParamIDs::erase)) e->setValueNotifyingHost (0.0f);
 }

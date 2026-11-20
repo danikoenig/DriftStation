@@ -67,6 +67,8 @@ public:
 
     void clearMemory() { engine.requestClear(); }
 
+    std::atomic<float> uiScale { 1.0f };   // Fenstergroesse, wird im Projekt gespeichert
+
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
 
 private:
@@ -78,6 +80,7 @@ private:
     drift::OutputLimiter limiter;
     int clipHold = 0;
     double sr = 48000.0;
+    double swayPhaseA = 0.0, swayPhaseB = 0.37;   // ultra langsames Links-Rechts-Schweben
 
     std::atomic<float>* pAlgo = nullptr; std::atomic<float>* pSize = nullptr;
     std::atomic<float>* pIn = nullptr; std::atomic<float>* pBlur = nullptr;

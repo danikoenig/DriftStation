@@ -22,18 +22,21 @@ not affiliated with SOMA Laboratory.
 | Giant Reverb | huge hall     | super-huge hall    | insanely-super-huge hall  |
 | Granular     | small grains  | medium grains      | large + centre grain delay|
 
+In the background the memory output slowly sways between left and right (periods of 83 s and 131 s), like the hardware.
+The window can be resized freely (drag the bottom right corner), the size is saved with the project.
+
 All algorithms share one memory. When you switch, the content is kept and processed by the new algorithm.
 
 ## Controls
 
 - **In (Auto)**: auto gain on the input. Every source is brought to a good working level, loud signals are pulled down, quiet ones lifted. The knob trims the target by +/-12 dB
 - **Blur**: delays: cross-feedback between the lines. Granular: noise on the grain position
-- **Drift**: delays: chaotic LFO moves the lines in the stereo field. Granular: moves the grain positions
+- **Drift**: delays: chaotic LFO moves the lines in the stereo field, each line stays on its side so the pitch stays steady. Granular: moves the grain positions
 - **Transpose**: transposes the memory output in semitones. Centre = 0, left down to -24, right up to +12
 - **Sup | Com**: left = suppressor (new sounds push out the recorded ones), right = compressor
 - **Feedback**: 0 to 1.25, white tick = 1.0. A soft tape-style limiter prevents hard clipping
-- **Mix**: input vs. memory, centre = equal
-- **Limit**: output limiter with auto gain, ceiling -1 dBFS. Fully open = only catches peaks. Turn it back to lower the threshold, the ring lights up red with the gain reduction
+- **Limiter**: output limiter with auto gain, ceiling -1 dBFS. Fully open = only catches peaks. Turn it back to lower the threshold, the ring lights up red with the gain reduction
+- **Mix** (far right): input vs. memory, centre = equal. Turn it to the centre to play live over your drone
 - **HPF / LPF**: filters in the loop, 3 settings each
 - **Record**: Off / Group 1 (left input) / Group 2 (right input) / All
 - **Reverse**, **Half Speed** (delays), **Erase** (hold), **Clear All**

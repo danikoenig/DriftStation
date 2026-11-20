@@ -5,12 +5,12 @@ using namespace DriftColours;
 
 namespace
 {
-    constexpr int W = 904, H = 516;
+    constexpr int W = DriftPanel::baseW, H = DriftPanel::baseH;
     constexpr int margin = 14, gap = 12, headerH = 44, mainH = 300;
 }
 
-DriftStationEditor::DriftStationEditor (DriftStationProcessor& p)
-    : AudioProcessorEditor (&p), processor (p),
+DriftPanel::DriftPanel (DriftStationProcessor& p)
+    : processor (p),
       algoSelector (p.apvts), memoryView (p),
       hpfSwitch (*p.apvts.getParameter (ParamIDs::hpf), { "OFF", "40", "120", "300" }, accent),
       lpfSwitch (*p.apvts.getParameter (ParamIDs::lpf), { "OFF", "1.5k", "4k", "9k" }, accent),
@@ -36,8 +36,9 @@ DriftStationEditor::DriftStationEditor (DriftStationProcessor& p)
     kSupcom.slider.getProperties().set ("bipolar", true);
     kFb.setup (*this, s, ParamIDs::fb, "Feedback", accent);
     kFb.slider.getProperties().set ("mark", 1.0 / 1.25);
-    kMix.setup (*this, s, ParamIDs::mix, "Mix", text);
-    kLimit.setup (*this, s, ParamIDs::limit, "Limit", text);
+    kMix.setup (*this, s, ParamIDs::mix, "Mix", accent);
+    kMix.label.setColour (juce::Label::textColourId, text);
+    kLimit.setup (*this, s, ParamIDs::limit, "Limiter", text);
     kLimit.slider.getProperties().set ("grLight", 0.0);
 
     kIn.slider.setTooltip ("Auto gain: the input is always brought to a good working level, loud signals are pulled down, "
@@ -80,12 +81,12 @@ DriftStationEditor::DriftStationEditor (DriftStationProcessor& p)
     startTimerHz (20);
 }
 
-DriftStationEditor::~DriftStationEditor()
+DriftPanel::~DriftPanel()
 {
     setLookAndFeel (nullptr);
 }
 
-void DriftStationEditor::setupToggle (juce::ToggleButton& b, const juce::String& t, juce::Colour c,
+void DriftPanel::setupToggle (juce::ToggleButton& b, const juce::String& t, juce::Colour c,
                                       const juce::String& paramID,
                                       std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>& att,
                                       const juce::String& tip)
@@ -98,7 +99,7 @@ void DriftStationEditor::setupToggle (juce::ToggleButton& b, const juce::String&
     att = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (processor.apvts, paramID, b);
 }
 
-void DriftStationEditor::timerCallback()
+void DriftPanel::timerCallback()
 {
     inBar.set (processor.inLevel.load(), processor.inClip.load());
     loopBar.set (processor.engine.loopLevel.load(), processor.engine.limiting.load());
@@ -123,7 +124,7 @@ void DriftStationEditor::timerCallback()
     }
 }
 
-void DriftStationEditor::paint (juce::Graphics& g)
+void DriftPanel::paint (juce::Graphics& g)
 {
     g.setGradientFill (juce::ColourGradient (bgTop, 0.0f, 0.0f, bgBottom, 0.0f, (float) getHeight(), false));
     g.fillAll();
@@ -163,7 +164,7 @@ void DriftStationEditor::paint (juce::Graphics& g)
     g.drawText ("GATE", gateLabel, juce::Justification::centredLeft);
 }
 
-void DriftStationEditor::resized()
+void DriftPanel::resized()
 {
     auto area = getLocalBounds().reduced (margin);
     auto header = area.removeFromTop (headerH);
@@ -183,7 +184,7 @@ void DriftStationEditor::resized()
     auto kc = knobCard.reduced (10, 12);
     const int rowH = kc.getHeight() / 2;
     Knob::layoutRow (kc.removeFromTop (rowH).reduced (0, 4), { &kIn, &kBlur, &kDrift, &kTranspose });
-    Knob::layoutRow (kc.reduced (0, 4), { &kSupcom, &kFb, &kMix, &kLimit });
+    Knob::layoutRow (kc.reduced (0, 4), { &kSupcom, &kFb, &kLimit, &kMix });
 
     area.removeFromTop (gap);
     bottomCard = area;
@@ -222,4 +223,29 @@ void DriftStationEditor::resized()
     gateSwitch.setBounds (g);
 
     bc.removeFromTop (10);
+}
+
+//==============================================================================
+DriftStationEditor::DriftStationEditor (DriftStationProcessor& p)
+    : AudioProcessorEditor (&p), proc (p), panel (p)
+{
+    addAndMakeVisible (panel);
+    setResizable (true, true);
+    setResizeLimits ((int) (W * 0.7), (int) (H * 0.7), W * 2, H * 2);
+    getConstrainer()->setFixedAspectRatio ((double) W / (double) H);
+    const float s = juce::jlimit (0.7f, 2.0f, p.uiScale.load());
+    setSize (juce::roundToInt (W * s), juce::roundToInt (H * s));
+}
+
+void DriftStationEditor::paint (juce::Graphics& g)
+{
+    g.fillAll (bgBottom);
+}
+
+void DriftStationEditor::resized()
+{
+    const float s = (float) getWidth() / (float) W;
+    panel.setBounds (0, 0, W, H);
+    panel.setTransform (juce::AffineTransform::scale (s));
+    proc.uiScale.store (s);
 }

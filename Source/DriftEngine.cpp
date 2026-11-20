@@ -542,7 +542,16 @@ namespace drift
                 {
                     float pan = basePan[(size_t) i];
                     if (algo != giantReverb)
-                        pan += driftSm * 0.9f * lfoVal[(size_t) i] * (pan < 0 ? 1.0f : -1.0f);
+                    {
+                        // Drift bewegt jede Linie nur auf ihrer eigenen Seite (kein Kreuzen der Mitte).
+                        // Sonst ueberlagern sich phasenverschobene Kopien desselben Tons und die Tonhoehe schwebt.
+                        const float side = pan < 0.0f ? -1.0f : 1.0f;
+                        const float a = std::abs (pan);
+                        const float lo = 0.25f * a, hi = std::min (1.0f, a + 0.6f * (1.0f - a));
+                        const float u = 0.5f + 0.5f * lfoVal[(size_t) i];
+                        const float moved = lo + (hi - lo) * u;
+                        pan = side * (a + (moved - a) * driftSm);
+                    }
                     float pl, pr;
                     panGains (pan, pl, pr);
                     outL += r[i] * pl;

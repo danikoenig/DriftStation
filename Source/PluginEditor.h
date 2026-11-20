@@ -6,11 +6,13 @@
 #include "Knob.h"
 #include "Widgets.h"
 
-class DriftStationEditor : public juce::AudioProcessorEditor, private juce::Timer
+// Die eigentliche Oberflaeche in fester Groesse (904 x 516). Der Editor skaliert sie.
+class DriftPanel : public juce::Component, private juce::Timer
 {
 public:
-    explicit DriftStationEditor (DriftStationProcessor&);
-    ~DriftStationEditor() override;
+    static constexpr int baseW = 904, baseH = 516;
+    explicit DriftPanel (DriftStationProcessor&);
+    ~DriftPanel() override;
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -41,6 +43,22 @@ private:
     juce::Rectangle<int> hpfLabel, lpfLabel, recLabel, gateLabel;
 
     juce::TooltipWindow tooltips { this, 600 };
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DriftPanel)
+};
+
+// Plugin-Fenster: frei skalierbar (Seitenverhaeltnis fest), Groesse wird im Projekt gespeichert
+class DriftStationEditor : public juce::AudioProcessorEditor
+{
+public:
+    explicit DriftStationEditor (DriftStationProcessor&);
+    void paint (juce::Graphics&) override;
+    void resized() override;
+    void pollNow() { panel.pollNow(); }
+
+private:
+    DriftStationProcessor& proc;
+    DriftPanel panel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DriftStationEditor)
 };

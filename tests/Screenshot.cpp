@@ -32,8 +32,9 @@ int main (int argc, char** argv)
     }
     std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
     ed->setVisible (true);
+    if (argc > 3) { const float sc = (float) std::atof (argv[3]); ed->setSize ((int) (904 * sc), (int) (516 * sc)); }
     for (int i = 0; i < 6; ++i) if (auto* de = dynamic_cast<DriftStationEditor*> (ed.get())) de->pollNow();
-    auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, 2.0f);
+    auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, argc > 3 ? 1.0f : 2.0f);
     juce::File out (argc > 1 ? argv[1] : "screenshot.png");
     out.deleteFile();
     juce::FileOutputStream os (out);
