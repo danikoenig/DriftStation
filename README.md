@@ -1,7 +1,7 @@
 # Drift Station
 
 Free drifting memory processor (VST3 / AU / Standalone) by Dani Koenig.
-Sister of [One Shooter](https://github.com/danikoenig/OneShooter) and [Quad Shooter](https://github.com/danikoenig/QuadShooter).
+A standalone audio effect for evolving drones and soundscapes.
 
 ![Drift Station](docs/screenshot.png)
 
