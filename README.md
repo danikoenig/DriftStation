@@ -23,7 +23,7 @@ not affiliated with SOMA Laboratory.
 | Granular     | small grains  | medium grains      | large + centre grain delay|
 
 In the background the memory output slowly sways between left and right (periods of 83 s and 131 s), like the hardware.
-The window can be resized freely (drag the bottom right corner), the size is saved with the project.
+The window opens at 100 % and can be resized freely (drag the bottom right corner, 70 % to 200 %).
 
 All algorithms share one memory. When you switch, the content is kept and processed by the new algorithm.
 

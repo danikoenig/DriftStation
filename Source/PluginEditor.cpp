@@ -233,8 +233,7 @@ DriftStationEditor::DriftStationEditor (DriftStationProcessor& p)
     setResizable (true, true);
     setResizeLimits ((int) (W * 0.7), (int) (H * 0.7), W * 2, H * 2);
     getConstrainer()->setFixedAspectRatio ((double) W / (double) H);
-    const float s = juce::jlimit (0.7f, 2.0f, p.uiScale.load());
-    setSize (juce::roundToInt (W * s), juce::roundToInt (H * s));
+    setSize (W, H);   // oeffnet immer in 100 % (wie One Shooter, Quad Shooter, Repetitor)
 }
 
 void DriftStationEditor::paint (juce::Graphics& g)
