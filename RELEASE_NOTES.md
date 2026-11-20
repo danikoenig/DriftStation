@@ -1,11 +1,11 @@
-## Drift Station v0.1.0
+## Drift Station v0.2.0
 
-First version.
+- **Auto gain on the input**: every source lands at a good working level, never too loud, never too quiet. The IN knob is now a +/-12 dB trim.
+- **Transpose** replaces Drive: -24 to +12 semitones in chromatic steps, centre = 0. Works on the memory output.
+- **Limit** replaces Out: output limiter with auto gain and a fixed -1 dBFS ceiling. Turn it back to push the limiter, the knob ring glows red with the gain reduction.
+- Gate switch: text fits again
+- Header now says "by Dani Koenig", like One Shooter and Quad Shooter
 
-- 4 algorithms, each in 3 sizes: 2 Delays, 4 Delays, Giant Reverb, Granular
-- Shared memory: switching algorithms keeps the content
-- Blur, Drift (chaotic LFO), Drive, Suppressor / Compressor, Feedback up to 1.25 with soft tape limiter
-- HPF / LPF in the loop, Record modes (Off / Group 1 / Group 2 / All), Reverse, Half Speed, Erase, Clear All
-- Input noise gate, Mono In
+Note: settings saved with v0.1.0 for In, Drive and Out are not carried over.
 
 **Install:** download `DriftStation-Installer.pkg` and follow `INSTALL.txt` (Apple Silicon, macOS 11+).

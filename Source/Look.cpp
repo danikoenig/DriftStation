@@ -45,6 +45,18 @@ void DriftLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int w,
     g.setColour (knobTrack);
     g.strokePath (track, juce::PathStrokeType (lineW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
+    // Limiter-Licht: Ring glueht rot mit der Gain Reduction
+    const float gr = (float) s.getProperties().getWithDefault ("grLight", -1.0);
+    if (gr > 0.01f)
+    {
+        juce::Path ring;
+        ring.addCentredArc (c.x, c.y, arcR, arcR, 0.0f, startAngle, endAngle, true);
+        g.setColour (clip.withAlpha (0.18f * gr));
+        g.strokePath (ring, juce::PathStrokeType (lineW * 3.2f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        g.setColour (clip.withAlpha (0.25f + 0.6f * gr));
+        g.strokePath (ring, juce::PathStrokeType (lineW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    }
+
     // Wert (bipolar von der Mitte)
     const bool bipolar = (bool) s.getProperties().getWithDefault ("bipolar", false);
     const float from = bipolar ? (startAngle + endAngle) * 0.5f : startAngle;
@@ -52,9 +64,10 @@ void DriftLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int w,
     {
         juce::Path val;
         val.addCentredArc (c.x, c.y, arcR, arcR, 0.0f, juce::jmin (from, angle), juce::jmax (from, angle), true);
-        g.setColour (col.withAlpha (0.25f));
+        const auto vc = gr > 0.0f ? col.interpolatedWith (clip, juce::jmin (1.0f, gr * 1.5f)) : col;
+        g.setColour (vc.withAlpha (0.25f));
         g.strokePath (val, juce::PathStrokeType (lineW * 2.4f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-        g.setColour (col);
+        g.setColour (vc);
         g.strokePath (val, juce::PathStrokeType (lineW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     }
 

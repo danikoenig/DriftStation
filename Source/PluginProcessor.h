@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 #include "DriftEngine.h"
+#include "Dynamics.h"
 
 namespace ParamIDs
 {
@@ -11,11 +12,11 @@ namespace ParamIDs
     inline const juce::String inGain    { "in" };
     inline const juce::String blur      { "blur" };
     inline const juce::String drift     { "drift" };
-    inline const juce::String drive     { "drive" };
+    inline const juce::String transpose { "transpose" };
     inline const juce::String supcom    { "supcom" };
     inline const juce::String fb        { "fb" };
     inline const juce::String mix       { "mix" };
-    inline const juce::String outGain   { "out" };
+    inline const juce::String limit     { "limit" };
     inline const juce::String hpf       { "hpf" };
     inline const juce::String lpf       { "lpf" };
     inline const juce::String record    { "record" };
@@ -62,6 +63,7 @@ public:
     std::atomic<float> inLevel { 0.0f };
     std::atomic<bool>  inClip { false };
     std::atomic<float> outLevel { 0.0f };
+    std::atomic<float> limiterGr { 0.0f };     // dB, fuer das Knopf-Licht
 
     void clearMemory() { engine.requestClear(); }
 
@@ -70,15 +72,18 @@ public:
 private:
     juce::AudioBuffer<float> wet, engIn;
     float gateGain = 1.0f, gateEnv = 0.0f;
-    float inGainSm = 1.0f, outGainSm = 1.0f, mixSm = 0.5f;
+    float mixSm = 0.5f, trimSm = 0.0f;
+    drift::InputAutoGain autoGain;
+    drift::PitchShifter shifter;
+    drift::OutputLimiter limiter;
     int clipHold = 0;
     double sr = 48000.0;
 
     std::atomic<float>* pAlgo = nullptr; std::atomic<float>* pSize = nullptr;
     std::atomic<float>* pIn = nullptr; std::atomic<float>* pBlur = nullptr;
-    std::atomic<float>* pDrift = nullptr; std::atomic<float>* pDrive = nullptr;
+    std::atomic<float>* pDrift = nullptr; std::atomic<float>* pTranspose = nullptr;
     std::atomic<float>* pSupcom = nullptr; std::atomic<float>* pFb = nullptr;
-    std::atomic<float>* pMix = nullptr; std::atomic<float>* pOut = nullptr;
+    std::atomic<float>* pMix = nullptr; std::atomic<float>* pLimit = nullptr;
     std::atomic<float>* pHpf = nullptr; std::atomic<float>* pLpf = nullptr;
     std::atomic<float>* pRecord = nullptr; std::atomic<float>* pReverse = nullptr;
     std::atomic<float>* pErase = nullptr; std::atomic<float>* pHalf = nullptr;

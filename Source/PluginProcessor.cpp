@@ -20,14 +20,26 @@ juce::AudioProcessorValueTreeState::ParameterLayout DriftStationProcessor::creat
                                   juce::StringArray { "2 Delays", "4 Delays", "Giant Reverb", "Granular" }, 0));
     l.add (std::make_unique<APC> (juce::ParameterID { ParamIDs::size, 1 }, "Size",
                                   juce::StringArray { "Small", "Medium", "Large" }, 1));
-    l.add (std::make_unique<APF> (juce::ParameterID { ParamIDs::inGain, 1 }, "In",
-                                  juce::NormalisableRange<float> (-60.0f, 12.0f, 0.1f, 2.0f), 0.0f, attr (db)));
+    l.add (std::make_unique<APF> (juce::ParameterID { ParamIDs::inGain, 2 }, "In (Auto Trim)",
+                                  juce::NormalisableRange<float> (-12.0f, 12.0f, 0.1f), 0.0f,
+                                  attr ([] (float v, int) { return juce::String (v > 0.04f ? "+" : "") + juce::String (v, 1) + " dB"; })));
     l.add (std::make_unique<APF> (juce::ParameterID { ParamIDs::blur, 1 }, "Blur",
                                   juce::NormalisableRange<float> (0.0f, 1.0f), 0.2f, attr (pct)));
     l.add (std::make_unique<APF> (juce::ParameterID { ParamIDs::drift, 1 }, "Drift",
                                   juce::NormalisableRange<float> (0.0f, 1.0f), 0.4f, attr (pct)));
-    l.add (std::make_unique<APF> (juce::ParameterID { ParamIDs::drive, 1 }, "Drive",
-                                  juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f, attr (pct)));
+    {
+        // Mitte = 0, links bis -24, rechts bis +12 Halbtoene, chromatisch
+        juce::NormalisableRange<float> tr (-24.0f, 12.0f,
+            [] (float, float, float v) { return v < 0.5f ? -24.0f + 48.0f * v : 24.0f * (v - 0.5f); },
+            [] (float, float, float x) { return x < 0.0f ? (x + 24.0f) / 48.0f : 0.5f + x / 24.0f; },
+            [] (float, float, float x) { return (float) juce::roundToInt (juce::jlimit (-24.0f, 12.0f, x)); });
+        l.add (std::make_unique<APF> (juce::ParameterID { ParamIDs::transpose, 2 }, "Transpose", tr, 0.0f,
+                                      attr ([] (float v, int)
+                                      {
+                                          const int st = juce::roundToInt (v);
+                                          return st == 0 ? juce::String ("0 st") : (st > 0 ? "+" : "") + juce::String (st) + " st";
+                                      })));
+    }
     l.add (std::make_unique<APF> (juce::ParameterID { ParamIDs::supcom, 1 }, "Sup|Com",
                                   juce::NormalisableRange<float> (-1.0f, 1.0f), 0.0f,
                                   attr ([] (float v, int)
@@ -41,8 +53,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout DriftStationProcessor::creat
                                   attr ([] (float v, int) { return juce::String (v, 2); })));
     l.add (std::make_unique<APF> (juce::ParameterID { ParamIDs::mix, 1 }, "Mix",
                                   juce::NormalisableRange<float> (0.0f, 1.0f), 0.5f, attr (pct)));
-    l.add (std::make_unique<APF> (juce::ParameterID { ParamIDs::outGain, 1 }, "Out",
-                                  juce::NormalisableRange<float> (-60.0f, 12.0f, 0.1f, 2.0f), 0.0f, attr (db)));
+    l.add (std::make_unique<APF> (juce::ParameterID { ParamIDs::limit, 2 }, "Limit Threshold",
+                                  juce::NormalisableRange<float> (-24.0f, 0.0f, 0.1f), 0.0f, attr (db)));
     l.add (std::make_unique<APC> (juce::ParameterID { ParamIDs::hpf, 1 }, "HPF",
                                   juce::StringArray { "Off", "40 Hz", "120 Hz", "300 Hz" }, 0));
     l.add (std::make_unique<APC> (juce::ParameterID { ParamIDs::lpf, 1 }, "LPF",
@@ -69,11 +81,11 @@ DriftStationProcessor::DriftStationProcessor()
     pIn = apvts.getRawParameterValue (ParamIDs::inGain);
     pBlur = apvts.getRawParameterValue (ParamIDs::blur);
     pDrift = apvts.getRawParameterValue (ParamIDs::drift);
-    pDrive = apvts.getRawParameterValue (ParamIDs::drive);
+    pTranspose = apvts.getRawParameterValue (ParamIDs::transpose);
     pSupcom = apvts.getRawParameterValue (ParamIDs::supcom);
     pFb = apvts.getRawParameterValue (ParamIDs::fb);
     pMix = apvts.getRawParameterValue (ParamIDs::mix);
-    pOut = apvts.getRawParameterValue (ParamIDs::outGain);
+    pLimit = apvts.getRawParameterValue (ParamIDs::limit);
     pHpf = apvts.getRawParameterValue (ParamIDs::hpf);
     pLpf = apvts.getRawParameterValue (ParamIDs::lpf);
     pRecord = apvts.getRawParameterValue (ParamIDs::record);
@@ -104,8 +116,13 @@ void DriftStationProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     engine.prepare (sampleRate);
     wet.setSize (2, juce::jmax (1, samplesPerBlock));
     engIn.setSize (2, juce::jmax (1, samplesPerBlock));
-    inGainSm = juce::Decibels::decibelsToGain (pIn->load(), -60.0f);
-    outGainSm = juce::Decibels::decibelsToGain (pOut->load(), -60.0f);
+    autoGain.prepare (sampleRate);
+    trimSm = pIn->load();
+    shifter.setSemitones (juce::roundToInt (pTranspose->load()));
+    shifter.prepare (sampleRate);
+    limiter.prepare (sampleRate);
+    limiter.setInitialThreshold (pLimit->load());
+    setLatencySamples (limiter.latency());
     mixSm = pMix->load();
 }
 
@@ -124,7 +141,6 @@ void DriftStationProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     p.size = (int) pSize->load();
     p.blur = pBlur->load();
     p.drift = pDrift->load();
-    p.drive = pDrive->load();
     p.supcom = pSupcom->load();
     p.fb = pFb->load();
     p.hpf = (int) pHpf->load();
@@ -143,27 +159,29 @@ void DriftStationProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     const int gateMode = (int) pGate->load();
     const float gateThr = gateMode == 2 ? juce::Decibels::decibelsToGain (-86.0f) : juce::Decibels::decibelsToGain (-66.0f);
     const bool mono = pMono->load() > 0.5f;
-    const float inT = juce::Decibels::decibelsToGain (pIn->load(), -60.0f);
-    const float outT = juce::Decibels::decibelsToGain (pOut->load(), -60.0f);
+    const float trimT = pIn->load();
+    const float thr = pLimit->load();
+    shifter.setSemitones (juce::roundToInt (pTranspose->load()));
     const float mixT = pMix->load();
     const float kSm = 1.0f - std::exp (-1.0f / (0.02f * (float) sr));
     const float kGateA = 1.0f - std::exp (-1.0f / (0.001f * (float) sr));
     const float kGateR = 1.0f - std::exp (-1.0f / (0.08f * (float) sr));
     const float kEnvR = 1.0f - std::exp (-1.0f / (0.05f * (float) sr));
 
-    // Eingang: Gain, Mono-Summe, Noise Gate. Trocken-Signal bleibt im buffer.
+    // Eingang: Noise Gate (am Roh-Signal), Autogain, Mono-Summe. Trocken-Signal bleibt im buffer.
     float inPeak = 0.0f;
     if (engIn.getNumSamples() < n) engIn.setSize (2, n, false, false, true);
     auto* eL = engIn.getWritePointer (0);
     auto* eR = engIn.getWritePointer (1);
     for (int s = 0; s < n; ++s)
     {
-        inGainSm += (inT - inGainSm) * kSm;
-        float l = L[s] * inGainSm, r = R[s] * inGainSm;
+        trimSm += (trimT - trimSm) * kSm;
+        float l = L[s], r = R[s];
         if (mono) { const float m = 0.5f * (l + r); l = r = m; }
+        const float a = std::max (std::abs (l), std::abs (r));   // Gate entscheidet vor dem Autogain
+        autoGain.process (l, r, trimSm);
         L[s] = l; R[s] = r;
-        const float a = std::max (std::abs (l), std::abs (r));
-        inPeak = std::max (inPeak, a);
+        inPeak = std::max (inPeak, std::max (std::abs (l), std::abs (r)));
 
         float g = 1.0f;
         if (gateMode > 0)
@@ -183,11 +201,13 @@ void DriftStationProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     for (int s = 0; s < n; ++s)
     {
         mixSm += (mixT - mixSm) * kSm;
-        outGainSm += (outT - outGainSm) * kSm;
         const float dryG = std::cos (mixSm * juce::MathConstants<float>::halfPi);
         const float wetG = std::sin (mixSm * juce::MathConstants<float>::halfPi);
-        L[s] = (L[s] * dryG + wl[s] * wetG) * outGainSm;
-        R[s] = (R[s] * dryG + wr[s] * wetG) * outGainSm;
+        float tl = wl[s], tr = wr[s];
+        shifter.process (tl, tr);                    // Transpose nur auf dem Speicher-Ausgang
+        float l = L[s] * dryG + tl * wetG, r = R[s] * dryG + tr * wetG;
+        limiter.process (l, r, thr);
+        L[s] = l; R[s] = r;
         outPeak = std::max (outPeak, std::max (std::abs (L[s]), std::abs (R[s])));
     }
 
@@ -196,6 +216,7 @@ void DriftStationProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     inClip.store (clipHold > 0);
     inLevel.store (std::max (inPeak, inLevel.load() * 0.9f));
     outLevel.store (std::max (outPeak, outLevel.load() * 0.9f));
+    limiterGr.store (std::max (limiter.takeGr(), limiterGr.load() * 0.85f));
 }
 
 void DriftStationProcessor::getStateInformation (juce::MemoryBlock& destData)

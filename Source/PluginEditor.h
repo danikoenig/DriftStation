@@ -29,7 +29,7 @@ private:
     MemoryView memoryView;
     LevelBar inBar { "IN" }, loopBar { "LOOP" };
 
-    Knob kIn, kBlur, kDrift, kDrive, kSupcom, kFb, kMix, kOut;
+    Knob kIn, kBlur, kDrift, kTranspose, kSupcom, kFb, kMix, kLimit;
 
     SegmentSwitch hpfSwitch, lpfSwitch, recSwitch, gateSwitch;
     juce::ToggleButton reverseButton, halfButton, monoButton;

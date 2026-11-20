@@ -14,6 +14,10 @@ int main (int argc, char** argv)
     {
         proc.apvts.getParameter (ParamIDs::algo)->setValueNotifyingHost (proc.apvts.getParameter (ParamIDs::algo)->convertTo0to1 ((float) std::atoi (argv[2])));
     }
+    // Demo-Einstellung fuer das Bild: Transpose -12, Limiter arbeitet
+    auto setP = [&] (const juce::String& id, float v) { auto* p = proc.apvts.getParameter (id); p->setValueNotifyingHost (p->convertTo0to1 (v)); };
+    setP (ParamIDs::transpose, -12.0f);
+    setP (ParamIDs::limit, -16.0f);
     juce::AudioBuffer<float> buf (2, 512);
     juce::MidiBuffer midi;
     double t = 0.0;

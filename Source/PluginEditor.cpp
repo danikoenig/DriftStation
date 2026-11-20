@@ -26,29 +26,35 @@ DriftStationEditor::DriftStationEditor (DriftStationProcessor& p)
     addAndMakeVisible (loopBar);
 
     auto& s = p.apvts;
-    kIn.setup (*this, s, ParamIDs::inGain, "In", text);
+    kIn.setup (*this, s, ParamIDs::inGain, "In  Auto", text);
+    kIn.slider.getProperties().set ("bipolar", true);
     kBlur.setup (*this, s, ParamIDs::blur, "Blur", accent);
     kDrift.setup (*this, s, ParamIDs::drift, "Drift", accent);
-    kDrive.setup (*this, s, ParamIDs::drive, "Drive", warn);
+    kTranspose.setup (*this, s, ParamIDs::transpose, "Transpose", warn);
+    kTranspose.slider.getProperties().set ("bipolar", true);
     kSupcom.setup (*this, s, ParamIDs::supcom, "Sup | Com", accent2);
     kSupcom.slider.getProperties().set ("bipolar", true);
     kFb.setup (*this, s, ParamIDs::fb, "Feedback", accent);
     kFb.slider.getProperties().set ("mark", 1.0 / 1.25);
     kMix.setup (*this, s, ParamIDs::mix, "Mix", text);
-    kOut.setup (*this, s, ParamIDs::outGain, "Out", text);
+    kLimit.setup (*this, s, ParamIDs::limit, "Limit", text);
+    kLimit.slider.getProperties().set ("grLight", 0.0);
 
-    kIn.slider.setTooltip ("Input level. Keep the IN meter out of the red.");
+    kIn.slider.setTooltip ("Auto gain: the input is always brought to a good working level, loud signals are pulled down, "
+                           "quiet ones lifted. The knob trims the target by +/-12 dB. Centre = 0.");
     kBlur.slider.setTooltip ("Delays: cross-feedback between the delay lines, the content slowly blurs. "
                              "Granular: noise modulation of the grain position. No effect in Giant Reverb.");
     kDrift.slider.setTooltip ("Delays: asynchronous LFO, modulated by a slow chaotic signal, moves the delays in the stereo field. "
                               "Granular: the same LFO moves the grain positions. No effect in Giant Reverb.");
-    kDrive.slider.setTooltip ("Gentle overdrive inside the loop, like a guitar overdrive.");
+    kTranspose.slider.setTooltip ("Transposes the memory output in semitones. Centre = 0, left down to -24, right up to +12.");
     kSupcom.slider.setTooltip ("Centre: off. Left: Suppressor, loud new sounds push out the recorded ones. "
                                "Right: Compressor, evens out the level of the memory content.");
     kFb.slider.setTooltip ("Feedback. Below 1.0 the sounds fade out, at 1.0 they stay, above 1.0 they grow "
                            "(the tape-style limiter keeps them from clipping). White tick = 1.0.");
     kMix.slider.setTooltip ("Balance between input and memory. Centre = equal.");
-    kOut.slider.setTooltip ("Output level.");
+    kLimit.slider.setTooltip ("Output limiter with auto gain, ceiling -1 dBFS. Fully open (right) = only catches peaks. "
+                             "Turn it back to lower the threshold: the limiter works harder and the output gets denser. "
+                             "The ring lights up red with the gain reduction.");
 
     for (auto* sw : { &hpfSwitch, &lpfSwitch, &recSwitch, &gateSwitch })
         addAndMakeVisible (*sw);
@@ -106,6 +112,15 @@ void DriftStationEditor::timerCallback()
         k->label.setAlpha (reverb ? 0.35f : 1.0f);
     }
     halfButton.setAlpha (delays ? 1.0f : 0.35f);
+
+    // Limiter-Licht: 0..12 dB Gain Reduction -> 0..1
+    const float gr = juce::jlimit (0.0f, 1.0f, processor.limiterGr.load() / 12.0f);
+    const float old = (float) kLimit.slider.getProperties()["grLight"];
+    if (std::abs (gr - old) > 0.005f)
+    {
+        kLimit.slider.getProperties().set ("grLight", gr);
+        kLimit.slider.repaint();
+    }
 }
 
 void DriftStationEditor::paint (juce::Graphics& g)
@@ -113,15 +128,23 @@ void DriftStationEditor::paint (juce::Graphics& g)
     g.setGradientFill (juce::ColourGradient (bgTop, 0.0f, 0.0f, bgBottom, 0.0f, (float) getHeight(), false));
     g.fillAll();
 
-    // Titel
+    // Logo: Umlaufbahn mit driftendem Punkt, Titel, by Dani Koenig
     auto header = juce::Rectangle<int> (margin, margin, getWidth() - 2 * margin, headerH);
+    {
+        const float cx = (float) header.getX() + 11.0f, cy = (float) header.getCentreY();
+        g.setColour (accent.withAlpha (0.35f));
+        g.drawEllipse (cx - 10.0f, cy - 10.0f, 20.0f, 20.0f, 1.6f);
+        g.setColour (accent);
+        g.fillEllipse (cx - 4.0f, cy - 4.0f, 8.0f, 8.0f);
+        g.fillEllipse (cx + 5.0f, cy - 10.5f, 5.0f, 5.0f);
+    }
     g.setColour (text);
-    g.setFont (juce::FontOptions (22.0f, juce::Font::bold));
-    g.drawText ("DRIFT STATION", header.withWidth (220), juce::Justification::centredLeft);
+    g.setFont (juce::FontOptions (19.0f, juce::Font::bold));
+    g.drawText ("DRIFT STATION", header.getX() + 34, header.getY() + 4, 220, 22, juce::Justification::centredLeft);
     g.setColour (textDim);
     g.setFont (juce::FontOptions (11.0f));
-    g.drawText (juce::String ("drifting memory processor  |  v") + JucePlugin_VersionString,
-                header.withTrimmedLeft (212).withWidth (260), juce::Justification::centredLeft);
+    g.drawText (juce::String::fromUTF8 ("by Dani Koenig  \xc2\xb7  v") + JucePlugin_VersionString,
+                header.getX() + 34, header.getY() + 24, 220, 14, juce::Justification::centredLeft);
 
     // Karten
     for (auto r : { knobCard, bottomCard })
@@ -159,8 +182,8 @@ void DriftStationEditor::resized()
 
     auto kc = knobCard.reduced (10, 12);
     const int rowH = kc.getHeight() / 2;
-    Knob::layoutRow (kc.removeFromTop (rowH).reduced (0, 4), { &kIn, &kBlur, &kDrift, &kDrive });
-    Knob::layoutRow (kc.reduced (0, 4), { &kSupcom, &kFb, &kMix, &kOut });
+    Knob::layoutRow (kc.removeFromTop (rowH).reduced (0, 4), { &kIn, &kBlur, &kDrift, &kTranspose });
+    Knob::layoutRow (kc.reduced (0, 4), { &kSupcom, &kFb, &kMix, &kLimit });
 
     area.removeFromTop (gap);
     bottomCard = area;
@@ -182,7 +205,7 @@ void DriftStationEditor::resized()
 
     bc.removeFromTop (16);
     auto row2 = bc.removeFromTop (36);
-    const int bw = 124;
+    const int bw = 116;
     reverseButton.setBounds (row2.removeFromLeft (bw));
     row2.removeFromLeft (10);
     halfButton.setBounds (row2.removeFromLeft (bw));
@@ -192,10 +215,10 @@ void DriftStationEditor::resized()
     clearButton.setBounds (row2.removeFromLeft (bw));
 
     auto right = row2;
-    monoButton.setBounds (right.removeFromRight (110));
+    monoButton.setBounds (right.removeFromRight (104));
     right.removeFromRight (12);
-    auto g = right.removeFromRight (190);
-    gateLabel = g.removeFromLeft (42);
+    auto g = right.removeFromRight (222);
+    gateLabel = g.removeFromLeft (40);
     gateSwitch.setBounds (g);
 
     bc.removeFromTop (10);
