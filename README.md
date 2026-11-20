@@ -1,0 +1,56 @@
+# Drift Station
+
+Free drifting memory processor (VST3 / AU / Standalone) by Dani Koenig.
+
+![Drift Station](docs/screenshot.png)
+
+Drift Station records whatever you feed it into a large sound memory and keeps recombining it.
+The delay lines all have different prime-number lengths, an asynchronous LFO moves them, and a slow
+chaotic signal modulates that LFO. So the material layers up endlessly, like a looper, but without
+an obvious repeating loop. Made for ambient, drones and evolving soundscapes.
+
+Inspired by the SOMA Laboratory COSMOS hardware pedal. Drift Station is an independent project and
+not affiliated with SOMA Laboratory.
+
+## Algorithms (each in 3 sizes)
+
+| Algorithm    | S             | M                  | L                         |
+|--------------|---------------|--------------------|---------------------------|
+| 2 Delays     | ~2.5 s        | ~9.5 s             | ~22 s                     |
+| 4 Delays     | ~2.5 s        | ~8.5 s             | ~11.5 s                   |
+| Giant Reverb | huge hall     | super-huge hall    | insanely-super-huge hall  |
+| Granular     | small grains  | medium grains      | large + centre grain delay|
+
+All algorithms share one memory. When you switch, the content is kept and processed by the new algorithm.
+
+## Controls
+
+- **In / Out**: input and output level
+- **Blur**: delays: cross-feedback between the lines. Granular: noise on the grain position
+- **Drift**: delays: chaotic LFO moves the lines in the stereo field. Granular: moves the grain positions
+- **Drive**: gentle overdrive inside the loop
+- **Sup | Com**: left = suppressor (new sounds push out the recorded ones), right = compressor
+- **Feedback**: 0 to 1.25, white tick = 1.0. A soft tape-style limiter prevents hard clipping
+- **Mix**: input vs. memory, centre = equal
+- **HPF / LPF**: filters in the loop, 3 settings each
+- **Record**: Off / Group 1 (left input) / Group 2 (right input) / All
+- **Reverse**, **Half Speed** (delays), **Erase** (hold), **Clear All**
+- **Gate** (input noise gate), **Mono In**
+
+## Install
+
+Download the latest release: https://github.com/danikoenig/DriftStation/releases
+See `INSTALL.txt` (English / Deutsch). Apple Silicon, macOS 11+.
+
+## Build
+
+```
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+```
+
+JUCE 8 is downloaded automatically. Engine test without JUCE:
+
+```
+g++ -O2 -std=c++17 -I Source tests/EngineTest.cpp Source/DriftEngine.cpp -o enginetest && ./enginetest
+```

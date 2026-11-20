@@ -1,0 +1,12 @@
+Done!
+
+Restart your DAW and rescan plugins. Then search for "Drift Station"
+in your audio effects list.
+Logic Pro: Audio FX > Audio Units > Dani Koenig > Drift Station.
+
+---
+
+Fertig! Starte deine DAW neu und lass die Plugins neu scannen.
+Logic Pro: Audio FX > Audio Units > Dani Koenig > Drift Station.
+
+https://github.com/danikoenig/DriftStation

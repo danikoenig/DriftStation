@@ -1,0 +1,65 @@
+cmake_minimum_required(VERSION 3.22)
+
+project(DriftStation VERSION 0.1.0)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# JUCE: lokaler Pfad (-DJUCE_PATH=...) oder automatischer Download
+if(DEFINED JUCE_PATH)
+    add_subdirectory(${JUCE_PATH} JUCE)
+else()
+    include(FetchContent)
+    FetchContent_Declare(
+        JUCE
+        GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+        GIT_TAG 8.0.4
+        GIT_SHALLOW ON)
+    FetchContent_MakeAvailable(JUCE)
+endif()
+
+juce_add_plugin(DriftStation
+    COMPANY_NAME "Dani Koenig"
+    BUNDLE_ID "ch.danikoenig.driftstation"
+    PLUGIN_MANUFACTURER_CODE Dkng
+    PLUGIN_CODE Drs1
+    FORMATS VST3 AU Standalone
+    AU_MAIN_TYPE kAudioUnitType_Effect
+    PRODUCT_NAME "Drift Station"
+    IS_SYNTH FALSE
+    NEEDS_MIDI_INPUT FALSE
+    NEEDS_MIDI_OUTPUT FALSE
+    IS_MIDI_EFFECT FALSE
+    EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+    COPY_PLUGIN_AFTER_BUILD FALSE
+    VST3_CATEGORIES Fx Delay Reverb)
+
+target_sources(DriftStation PRIVATE
+    Source/PluginProcessor.cpp
+    Source/PluginEditor.cpp
+    Source/DriftEngine.cpp
+    Source/Widgets.cpp
+    Source/Look.cpp)
+
+target_compile_definitions(DriftStation PUBLIC
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_VST3_CAN_REPLACE_VST2=0
+)
+
+target_link_libraries(DriftStation
+    PRIVATE
+        juce::juce_audio_utils
+        juce::juce_dsp
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
+
+# Optionaler Test mit JUCE (nur lokal): -DDRIFT_TEST_SRC=tests/Screenshot.cpp
+if(DRIFT_TEST_SRC)
+    add_executable(DriftTest ${DRIFT_TEST_SRC})
+    target_link_libraries(DriftTest PRIVATE DriftStation)
+    target_include_directories(DriftTest PRIVATE $<TARGET_PROPERTY:DriftStation,INCLUDE_DIRECTORIES>)
+    target_compile_definitions(DriftTest PRIVATE $<TARGET_PROPERTY:DriftStation,COMPILE_DEFINITIONS>)
+endif()

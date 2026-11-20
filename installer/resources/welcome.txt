@@ -1,0 +1,12 @@
+Drift Station - free drifting memory processor
+by Dani Koenig
+
+This installs Drift Station as:
+- VST3:       /Library/Audio/Plug-Ins/VST3   (Bitwig, Ableton Live, Cubase, Reaper ...)
+- Audio Unit: /Library/Audio/Plug-Ins/Components   (Logic Pro, GarageBand)
+
+Requirements: Apple Silicon Mac (M1 or newer), macOS 11 or newer.
+
+---
+
+Installiert Drift Station als VST3 und als Audio Unit (für Logic Pro und GarageBand).
