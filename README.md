@@ -1,6 +1,8 @@
 # Drift Station
 
-Free drifting memory processor (VST3 / AU / Standalone) by Dani Koenig.
+**Manual (PDF):** [English](https://github.com/danikoenig/DriftStation/releases/latest/download/DriftStation-Manual-EN.pdf) | [Deutsch](https://github.com/danikoenig/driftstation/releases/latest/download/DriftStation-Manual-DE.pdf)
+
+Free drifting memory processor (VST3 / AU / CLAP / Standalone) by Dani Koenig.
 A standalone audio effect for evolving drones and soundscapes.
 
 ![Drift Station](docs/screenshot.png)
