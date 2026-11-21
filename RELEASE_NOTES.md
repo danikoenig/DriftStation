@@ -1,4 +1,6 @@
-## Drift Station v0.3.2
+## Drift Station v0.3.3
+
+- **CLAP format** (Bitwig, Reaper ...) in addition to VST3 and Audio Unit. The installer puts it in /Library/Audio/Plug-Ins/CLAP.
 
 - **Opens at 100 %**: the window always opens at its normal size, like One Shooter, Quad Shooter and Repetitor. You can still drag the bottom right corner (70 % to 200 %).
 

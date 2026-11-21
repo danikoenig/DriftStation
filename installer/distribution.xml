@@ -14,6 +14,7 @@
         <line choice="default">
             <line choice="ch.danikoenig.driftstation.vst3"/>
             <line choice="ch.danikoenig.driftstation.au"/>
+            <line choice="ch.danikoenig.driftstation.clap"/>
         </line>
     </choices-outline>
     <choice id="default"/>
@@ -23,6 +24,10 @@
     <choice id="ch.danikoenig.driftstation.au" visible="false">
         <pkg-ref id="ch.danikoenig.driftstation.au"/>
     </choice>
+    <choice id="ch.danikoenig.driftstation.clap" visible="false">
+        <pkg-ref id="ch.danikoenig.driftstation.clap"/>
+    </choice>
+    <pkg-ref id="ch.danikoenig.driftstation.clap" version="@VERSION@" onConclusion="none">DriftStationCLAP.pkg</pkg-ref>
     <pkg-ref id="ch.danikoenig.driftstation.vst3" version="@VERSION@" onConclusion="none">DriftStationVST3.pkg</pkg-ref>
     <pkg-ref id="ch.danikoenig.driftstation.au" version="@VERSION@" onConclusion="none">DriftStationAU.pkg</pkg-ref>
 </installer-gui-script>

@@ -30,7 +30,7 @@ jobs:
             -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
 
       - name: Build
-        run: cmake --build build --config Release --target DriftStation_VST3 DriftStation_AU DriftStation_Standalone -j 4
+        run: cmake --build build --config Release --target DriftStation_VST3 DriftStation_AU DriftStation_Standalone DriftStation_CLAP -j 4
 
       - name: Validate AU (auval)
         run: |
@@ -47,10 +47,12 @@ jobs:
           ART=build/DriftStation_artefacts/Release
           codesign --force --deep --sign - "$ART/VST3/Drift Station.vst3"
           codesign --force --deep --sign - "$ART/AU/Drift Station.component"
+          codesign --force --deep --sign - "$ART/CLAP/Drift Station.clap"
           codesign --force --deep --sign - "$ART/Standalone/Drift Station.app"
           mkdir -p dist "pkg/Drift Station"
           cp -R "$ART/VST3/Drift Station.vst3" "pkg/Drift Station/"
           cp -R "$ART/AU/Drift Station.component" "pkg/Drift Station/"
+          cp -R "$ART/CLAP/Drift Station.clap" "pkg/Drift Station/"
           cp INSTALL.txt "pkg/Drift Station/INSTALL.txt"
           ditto -c -k --keepParent "pkg/Drift Station" "dist/DriftStation-VST3-macOS-arm64.zip"
           ditto -c -k --keepParent "$ART/Standalone/Drift Station.app" "dist/DriftStation-Standalone-macOS-arm64.zip"
@@ -76,6 +78,14 @@ jobs:
           pkgbuild --root pkgroot-au --component-plist build/pkg/component-au.plist \
             --identifier ch.danikoenig.driftstation.au --version "$VERSION" \
             --install-location "/Library/Audio/Plug-Ins/Components" build/pkg/DriftStationAU.pkg
+          # CLAP-Paket
+          mkdir -p pkgroot-clap
+          cp -R "$ART/CLAP/Drift Station.clap" pkgroot-clap/
+          pkgbuild --analyze --root pkgroot-clap build/pkg/component-clap.plist
+          plutil -replace 0.BundleIsRelocatable -bool NO build/pkg/component-clap.plist
+          pkgbuild --root pkgroot-clap --component-plist build/pkg/component-clap.plist \
+            --identifier ch.danikoenig.driftstation.clap --version "$VERSION" \
+            --install-location "/Library/Audio/Plug-Ins/CLAP" build/pkg/DriftStationCLAP.pkg
           sed "s/@VERSION@/$VERSION/g" installer/distribution.xml > build/pkg/distribution.xml
           productbuild --distribution build/pkg/distribution.xml --resources installer/resources \
             --package-path build/pkg "dist/DriftStation-Installer.pkg"

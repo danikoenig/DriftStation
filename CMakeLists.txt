@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(DriftStation VERSION 0.3.2)
+project(DriftStation VERSION 0.3.3)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,6 +17,17 @@ else()
         GIT_SHALLOW ON)
     FetchContent_MakeAvailable(JUCE)
 endif()
+
+# CLAP (Bitwig, Reaper u.a.) ueber clap-juce-extensions
+include(FetchContent)
+FetchContent_Declare(
+    clap-juce-extensions
+    GIT_REPOSITORY https://github.com/free-audio/clap-juce-extensions.git
+    GIT_TAG main
+    GIT_SUBMODULES_RECURSE TRUE
+    EXCLUDE_FROM_ALL)
+FetchContent_MakeAvailable(clap-juce-extensions)
+
 
 juce_add_plugin(DriftStation
     COMPANY_NAME "Dani Koenig"
@@ -55,6 +66,10 @@ target_link_libraries(DriftStation
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
+
+clap_juce_extensions_plugin(TARGET DriftStation
+    CLAP_ID "ch.danikoenig.driftstation"
+    CLAP_FEATURES audio-effect delay stereo)
 
 # Optionaler Test mit JUCE (nur lokal): -DDRIFT_TEST_SRC=tests/Screenshot.cpp
 if(DRIFT_TEST_SRC)
